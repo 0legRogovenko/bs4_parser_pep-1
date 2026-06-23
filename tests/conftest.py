@@ -3,8 +3,10 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 from typing import List, Tuple
+from unittest.mock import patch
 
 import pytest
+import requests
 import requests_mock
 from bs4 import BeautifulSoup
 from requests_cache import ALL_METHODS, CachedSession
@@ -103,29 +105,9 @@ def mount_mock_adapter(session: CachedSession) -> CachedSession:
 
 @pytest.fixture(scope='function')
 def mock_session(tempfile_session) -> CachedSession:
-    http_mocker = requests_mock.Mocker()
-    http_mocker.start()
-    http_mocker.register_uri(
-        requests_mock.ANY, requests_mock.ANY,
-        headers={'Content-Type': 'text/plain'},
-        text='You are breathtaken', status_code=200,
-    )
-    http_mocker.register_uri(
-        'GET', PEP_URL,
-        text='No, you are breathtaken!', status_code=200,
-    )
-    http_mocker.register_uri(
-        'GET', re.compile(r'.*whatsnew.*'),
-        headers={'Content-Type': 'text/html'},
-        text=WHATSNEW_HTML, status_code=200,
-    )
-    http_mocker.register_uri(
-        'GET', DOWNLOADS_URL,
-        headers={'Content-Type': 'text/html'},
-        text=DOWNLOAD_HTML, status_code=200,
-    )
-    yield mount_mock_adapter(tempfile_session)
-    http_mocker.stop()
+    session = mount_mock_adapter(tempfile_session)
+    with patch.object(CachedSession, 'send', requests.Session.send):
+        yield session
 
 
 @pytest.fixture

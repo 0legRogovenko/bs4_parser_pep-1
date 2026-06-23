@@ -28,8 +28,12 @@ VERSIONS_NOT_FOUND_MSG = 'Ничего не нашлось'
 def whats_new(session):
     """Парсит страницу «What's New in Python» и возвращает список статей."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    soup = get_soup(session, whats_new_url)
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    try:
+        soup = get_soup(session, whats_new_url)
+    except ConnectionError as error:
+        logging.warning(str(error))
+        return results
     selector = '#what-s-new-in-python div.toctree-wrapper li.toctree-l1 a'
     for a_tag in tqdm(soup.select(selector)):
         version_link = urljoin(whats_new_url, a_tag['href'])
